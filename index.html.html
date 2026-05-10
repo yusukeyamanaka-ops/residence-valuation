@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>東京レジデンス価格算定 | Tokyo Residence Valuation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f3ee;
+    --bg-card: #faf9f6;
+    --bg-dark: #1a1916;
+    --ink: #1a1916;
+    --ink-2: #4a4844;
+    --ink-3: #8a8784;
+    --accent: #b8440a;
+    --accent-light: #f5ede7;
+    --border: rgba(26,25,22,0.12);
+    --border-strong: rgba(26,25,22,0.25);
+    --success-bg: #eef4e8;
+    --success-text: #2d5a16;
+    --mono: 'DM Mono', monospace;
+    --serif: 'Noto Serif JP', serif;
+  }
+
+  html { font-size: 16px; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--serif);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* ── Layout ── */
+  .page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+
+  /* ── Header ── */
+  header {
+    padding: 48px 0 36px;
+    border-bottom: 1px solid var(--border-strong);
+    margin-bottom: 36px;
+  }
+  .header-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  header h1 {
+    font-size: clamp(22px, 4vw, 30px);
+    font-weight: 300;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+    color: var(--ink);
+  }
+  header h1 em {
+    font-style: normal;
+    font-weight: 500;
+  }
+  .header-desc {
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--ink-3);
+    font-family: var(--mono);
+    line-height: 1.5;
+  }
+
+  /* ── API Key Section ── */
+  .apikey-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px 24px;
+    margin-bottom: 28px;
+  }
+  .apikey-section .section-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .apikey-row { display: flex; gap: 10px; align-items: center; }
+  .apikey-row input {
+    flex: 1;
+    font-family: var(--mono);
+    font-size: 13px;
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 4px;
+    padding: 10px 14px;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .apikey-row input:focus { border-color: var(--accent); }
+  .apikey-note {
+    margin-top: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-3);
+  }
+  .apikey-note a { color: var(--accent); }
+
+  /* ── Form ── */
+  .form-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 28px;
+    margin-bottom: 20px;
+  }
+  .form-section-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-grid.cols-1 { grid-template-columns: 1fr; }
+  .form-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  @media (max-width: 540px) {
+    .form-grid, .form-grid.cols-3 { grid-template-columns: 1fr; }
+  }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-2);
+    letter-spacing: 0.05em;
+  }
+  .field-unit { position: relative; }
+  .field-unit input { width: 100%; padding-right: 42px; }
+  .field-unit .suffix {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-3);
+    pointer-events: none;
+  }
+  input[type="text"],
+  input[type="number"],
+  input[type="password"],
+  select {
+    font-family: var(--mono);
+    font-size: 13px;
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 4px;
+    padding: 10px 14px;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  input:focus, select:focus { border-color: var(--accent); }
+  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238a8784'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+  input::placeholder { color: var(--ink-3); }
+
+  /* ── Search mode toggle ── */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    background: var(--accent-light);
+    border: 1px solid rgba(184,68,10,0.2);
+    border-radius: 6px;
+    margin-bottom: 20px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .toggle-row input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent);
+    cursor: pointer;
+    flex-shrink: 0;
+    padding: 0;
+    border: none;
+    background: none;
+  }
+  .toggle-label {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    line-height: 1.4;
+  }
+
+  /* ── Run Button ── */
+  .run-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--bg-dark);
+    color: #f5f3ee;
+    border: none;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .run-btn:hover { opacity: 0.88; }
+  .run-btn:active { transform: scale(0.99); }
+  .run-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* ── Results ── */
+  .results { margin-top: 32px; }
+
+  .progress-log {
+    background: var(--bg-dark);
+    border-radius: 6px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    display: none;
+  }
+  .progress-log.visible { display: block; }
+  .progress-line {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: #a8a49e;
+    line-height: 2;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.3s, transform 0.3s;
+  }
+  .progress-line.show { opacity: 1; transform: none; }
+  .progress-line.active { color: #f5f3ee; }
+  .progress-line::before { content: '› '; color: var(--accent); }
+
+  .result-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    display: none;
+  }
+  .result-card.visible { display: block; }
+
+  .result-head {
+    background: var(--bg-dark);
+    color: #f5f3ee;
+    padding: 20px 28px;
+  }
+  .result-head .property-id {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: #a8a49e;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .result-head .property-label {
+    font-size: 16px;
+    font-weight: 300;
+    letter-spacing: 0.02em;
+  }
+
+  .result-body { padding: 28px; }
+
+  .price-hero {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+  .price-hero .pre { font-family: var(--mono); font-size: 12px; color: var(--ink-3); }
+  .price-hero .amount {
+    font-size: clamp(28px, 5vw, 38px);
+    font-weight: 500;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    font-family: var(--mono);
+  }
+  .price-hero .unit { font-family: var(--mono); font-size: 14px; color: var(--ink-2); }
+  .price-range-text {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-3);
+    margin-top: 4px;
+  }
+
+  .metrics-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  @media (max-width: 480px) { .metrics-row { grid-template-columns: 1fr 1fr; } }
+  .metric {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px 14px;
+  }
+  .metric .m-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-3);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .metric .m-val {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--ink);
+    line-height: 1.2;
+  }
+  .metric .m-sub {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-3);
+    margin-top: 2px;
+  }
+
+  .comment-section {
+    border-top: 1px solid var(--border);
+    padding-top: 20px;
+    margin-top: 4px;
+  }
+  .comment-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .comment-text {
+    font-size: 13px;
+    color: var(--ink-2);
+    line-height: 1.8;
+    white-space: pre-wrap;
+  }
+
+  .search-evidence {
+    margin-top: 16px;
+    background: var(--success-bg);
+    border-radius: 4px;
+    padding: 12px 16px;
+    display: none;
+  }
+  .search-evidence.visible { display: block; }
+  .search-evidence .se-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--success-text);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .search-evidence .se-text {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--success-text);
+    line-height: 1.6;
+  }
+
+  .error-box {
+    background: #fdecea;
+    border: 1px solid rgba(180,30,30,0.2);
+    border-radius: 6px;
+    padding: 16px 20px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: #8b1c1c;
+    display: none;
+  }
+  .error-box.visible { display: block; }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 60px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-3);
+    text-align: center;
+    line-height: 2;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="header-eyebrow">Real Estate Valuation Tool — Tokyo</div>
+    <h1>東京築浅レジデンス<br><em>価格算定システム</em></h1>
+    <p class="header-desc">
+      住所・面積から適正賃料を推定し<br>
+      NOI利回りベースの収益還元で価格レンジを算定します
+    </p>
+  </header>
+
+  <!-- API Key -->
+  <div class="apikey-section">
+    <div class="section-label">Anthropic API Key</div>
+    <div class="apikey-row">
+      <input type="password" id="apiKey" placeholder="sk-ant-api03-..." autocomplete="off" />
+    </div>
+    <p class="apikey-note">
+      APIキーは端末上でのみ使用されサーバーには送信されません。
+      取得: <a href="https://console.anthropic.com/" target="_blank">console.anthropic.com</a>
+    </p>
+  </div>
+
+  <!-- Form -->
+  <div class="form-section">
+    <div class="form-section-title">物件情報</div>
+
+    <div class="form-grid cols-1" style="margin-bottom:16px;">
+      <div class="field">
+        <label>住所（東京都内）</label>
+        <input type="text" id="address" placeholder="例: 港区南青山3丁目、渋谷区代々木2丁目" />
+      </div>
+    </div>
+
+    <div class="form-grid" style="margin-bottom:16px;">
+      <div class="field">
+        <label>専有面積（坪）</label>
+        <div class="field-unit">
+          <input type="number" id="tsubo" placeholder="10.5" step="0.1" min="1" max="300" />
+          <span class="suffix">坪</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>築年数</label>
+        <div class="field-unit">
+          <input type="number" id="age" placeholder="3" step="1" min="0" max="10" />
+          <span class="suffix">年</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-grid cols-3" style="margin-bottom:16px;">
+      <div class="field">
+        <label>構造</label>
+        <select id="structure">
+          <option value="RC">RC造</option>
+          <option value="SRC">SRC造</option>
+          <option value="S">S造</option>
+          <option value="木造">木造</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>間取り</label>
+        <select id="roomtype">
+          <option value="1K">1K</option>
+          <option value="1LDK">1LDK</option>
+          <option value="2LDK">2LDK</option>
+          <option value="3LDK">3LDK</option>
+          <option value="その他">その他</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>総階数（目安）</label>
+        <select id="totalfloor">
+          <option value="低層(3階以下)">低層(3F以下)</option>
+          <option value="中層(4-9階)" selected>中層(4-9F)</option>
+          <option value="高層(10-19階)">高層(10-19F)</option>
+          <option value="超高層(20階以上)">超高層(20F+)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-grid" style="margin-bottom:0;">
+      <div class="field">
+        <label>最寄駅徒歩（分）</label>
+        <div class="field-unit">
+          <input type="number" id="walk" placeholder="5" step="1" min="1" max="30" />
+          <span class="suffix">分</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>所在階</label>
+        <div class="field-unit">
+          <input type="number" id="floor" placeholder="7" step="1" min="1" max="60" />
+          <span class="suffix">階</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Web Search Toggle -->
+  <label class="toggle-row">
+    <input type="checkbox" id="useWebSearch" checked />
+    <span class="toggle-label">
+      ウェブ検索で直近の賃料相場を取得する（推奨）<br>
+      <span style="opacity:0.7;">SUUMO・HOME'S等から最新データを参照してから算定します</span>
+    </span>
+  </label>
+
+  <button class="run-btn" id="runBtn" onclick="runValuation()">▶ 価格を算定する</button>
+
+  <!-- Results -->
+  <div class="results">
+    <div class="progress-log" id="progressLog">
+      <div class="progress-line" id="pl1">物件情報を解析中...</div>
+      <div class="progress-line" id="pl2">エリア賃料データを検索中...</div>
+      <div class="progress-line" id="pl3">NOI・キャップレートを算出中...</div>
+      <div class="progress-line" id="pl4">価格レンジを算定中...</div>
+    </div>
+
+    <div class="error-box" id="errorBox"></div>
+
+    <div class="result-card" id="resultCard">
+      <div class="result-head">
+        <div class="property-id" id="rPropertyId">—</div>
+        <div class="property-label" id="rPropertyLabel">—</div>
+      </div>
+      <div class="result-body">
+        <div class="price-hero">
+          <span class="pre">算定価格（中央値）</span>
+          <span class="amount" id="rPriceCenter">—</span>
+          <span class="unit">万円</span>
+        </div>
+        <div class="price-range-text" id="rPriceRange"></div>
+
+        <div class="metrics-row" style="margin-top:20px;">
+          <div class="metric">
+            <div class="m-label">推定月額賃料</div>
+            <div class="m-val" id="rRent">—</div>
+            <div class="m-sub" id="rRentSub">—</div>
+          </div>
+          <div class="metric">
+            <div class="m-label">NOI利回り</div>
+            <div class="m-val" id="rNoi">—</div>
+            <div class="m-sub">空室5%・費用率15%</div>
+          </div>
+          <div class="metric">
+            <div class="m-label">坪単価</div>
+            <div class="m-val" id="rTsuboPrice">—</div>
+            <div class="m-sub">万円/坪</div>
+          </div>
+          <div class="metric">
+            <div class="m-label">キャップレート</div>
+            <div class="m-val" id="rCapRate">—</div>
+            <div class="m-sub">想定</div>
+          </div>
+          <div class="metric">
+            <div class="m-label">年間NOI</div>
+            <div class="m-val" id="rAnnualNoi">—</div>
+            <div class="m-sub">万円</div>
+          </div>
+          <div class="metric">
+            <div class="m-label">賃料坪単価</div>
+            <div class="m-val" id="rRentTsubo">—</div>
+            <div class="m-sub">万円/坪/月</div>
+          </div>
+        </div>
+
+        <div class="search-evidence" id="searchEvidence">
+          <div class="se-label">Web Search — 参照データ</div>
+          <div class="se-text" id="searchEvidenceText">—</div>
+        </div>
+
+        <div class="comment-section">
+          <div class="comment-label">AI コメント</div>
+          <div class="comment-text" id="rComment">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Powered by Claude API (claude-sonnet-4) + Web Search<br>
+    本ツールの算定結果は投資判断の参考情報です。最終的な意思決定はご自身の責任で行ってください。
+  </footer>
+
+</div>
+
+<script>
+function showProgress(step) {
+  const lines = ['pl1','pl2','pl3','pl4'];
+  lines.forEach((id, i) => {
+    const el = document.getElementById(id);
+    el.classList.remove('active');
+    if (i < step) { el.classList.add('show'); }
+    if (i === step) { el.classList.add('show','active'); }
+  });
+}
+
+async function runValuation() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  const address = document.getElementById('address').value.trim();
+  const tsubo = parseFloat(document.getElementById('tsubo').value);
+  const age = document.getElementById('age').value.trim();
+  const structure = document.getElementById('structure').value;
+  const roomtype = document.getElementById('roomtype').value;
+  const totalfloor = document.getElementById('totalfloor').value;
+  const walk = document.getElementById('walk').value.trim();
+  const floor = document.getElementById('floor').value.trim();
+  const useSearch = document.getElementById('useWebSearch').checked;
+
+  if (!apiKey) { alert('APIキーを入力してください。'); return; }
+  if (!address || !tsubo || !age || !walk || !floor) {
+    alert('すべての項目を入力してください。'); return;
+  }
+
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  document.getElementById('errorBox').classList.remove('visible');
+  document.getElementById('resultCard').classList.remove('visible');
+  document.getElementById('progressLog').classList.add('visible');
+  document.getElementById('searchEvidence').classList.remove('visible');
+  showProgress(0);
+
+  const sqm = (tsubo * 3.3058).toFixed(1);
+
+  // Short delay to show progress
+  await delay(400); showProgress(1);
+
+  // Step 1: Web search if enabled
+  let searchContext = '';
+  if (useSearch) {
+    try {
+      searchContext = await webSearchRent(apiKey, address, roomtype, tsubo);
+      await delay(400); showProgress(2);
+    } catch(e) {
+      searchContext = '（ウェブ検索は利用できませんでした。知識ベースで推定します）';
+    }
+  } else {
+    await delay(300); showProgress(2);
+  }
+
+  await delay(300); showProgress(3);
+
+  // Step 2: Valuation
+  try {
+    const result = await valuate(apiKey, { address, tsubo, sqm, age, structure, roomtype, totalfloor, walk, floor, searchContext });
+    await delay(300); showProgress(4);
+    await delay(400);
+
+    renderResult(result, { address, tsubo, age, structure, roomtype, walk, floor });
+    document.getElementById('progressLog').classList.remove('visible');
+    document.getElementById('resultCard').classList.add('visible');
+
+    if (useSearch && searchContext && !searchContext.includes('利用できません')) {
+      document.getElementById('searchEvidence').classList.add('visible');
+      document.getElementById('searchEvidenceText').textContent = searchContext.substring(0, 400) + (searchContext.length > 400 ? '...' : '');
+    }
+  } catch(e) {
+    document.getElementById('progressLog').classList.remove('visible');
+    const eb = document.getElementById('errorBox');
+    eb.classList.add('visible');
+    eb.textContent = 'エラー: ' + e.message;
+  }
+
+  btn.disabled = false;
+}
+
+async function webSearchRent(apiKey, address, roomtype, tsubo) {
+  const sqm = (tsubo * 3.3058).toFixed(0);
+  const query = `${address} ${roomtype} 賃料相場 2025 SUUMO`;
+
+  const body = {
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 1000,
+    tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+    messages: [{
+      role: 'user',
+      content: `以下のクエリでウェブ検索を行い、賃料相場の数値情報（月額賃料、坪単価、㎡単価）を簡潔にまとめてください。\n\n検索クエリ: "${query}"\n\n出力: 賃料相場の数値のみを日本語で3〜5文でまとめること。URLや出典名は不要。`
+    }]
+  };
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-calls': 'true'
+    },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error('Search API error ' + res.status);
+  const data = await res.json();
+  const texts = data.content.filter(b => b.type === 'text').map(b => b.text).join('\n');
+  return texts || '';
+}
+
+async function valuate(apiKey, params) {
+  const { address, tsubo, sqm, age, structure, roomtype, totalfloor, walk, floor, searchContext } = params;
+
+  const searchSection = searchContext
+    ? `\n【直近ウェブ検索で取得した賃料相場情報】\n${searchContext}\n上記の直近データを最優先で賃料推定に使用してください。\n`
+    : '';
+
+  const prompt = `あなたは東京の不動産ファンド運用の専門家です。以下の物件について収益還元法（NOI利回り）で価格算定してください。
+${searchSection}
+【物件情報】
+- 住所: ${address}
+- 専有面積: ${tsubo}坪（約${sqm}㎡）
+- 築年数: ${age}年
+- 構造: ${structure}造
+- 間取り: ${roomtype}
+- 建物規模: ${totalfloor}
+- 最寄駅徒歩: ${walk}分
+- 所在階: ${floor}階
+
+【算定条件】
+- 空室損失: 5%
+- 運営費比率: 15%（管理費・修繕積立・保険・固都税等）
+- NOI = 年間賃料 × (1-0.05) × (1-0.15)
+- 価格 = NOI ÷ キャップレート
+
+【出力】
+JSONのみ。コードブロック・前置き不要。
+
+{
+  "monthly_rent_man": 推定月額賃料（万円、小数1桁）,
+  "rent_per_tsubo_man": 賃料坪単価（万円/坪/月、小数2桁）,
+  "annual_noi_man": 年間NOI（万円、整数）,
+  "noi_rate_pct": NOI利回り（%、小数2桁）,
+  "cap_rate_pct": キャップレート（%、小数2桁）,
+  "price_center_man": 算定価格中央値（万円、整数）,
+  "price_low_man": 算定価格下限（万円、整数）,
+  "price_high_man": 算定価格上限（万円、整数）,
+  "price_per_tsubo_man": 価格坪単価（万円/坪、整数）,
+  "comment": "エリア賃料の根拠・キャップレート設定の理由・直近市況・留意点を含む専門的コメント（4〜6文、日本語）"
+}`;
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-calls': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `API error ${res.status}`);
+  }
+
+  const data = await res.json();
+  const raw = data.content.map(b => b.text || '').join('').replace(/```json|```/g, '').trim();
+  return JSON.parse(raw);
+}
+
+function renderResult(r, info) {
+  document.getElementById('rPropertyId').textContent =
+    `${info.address} — ${info.roomtype} / ${info.tsubo}坪 / 築${info.age}年 / ${info.structure}造 / 徒歩${info.walk}分 / ${info.floor}F`;
+  document.getElementById('rPropertyLabel').textContent =
+    `算定価格: ${Number(r.price_center_man).toLocaleString()} 万円`;
+  document.getElementById('rPriceCenter').textContent = Number(r.price_center_man).toLocaleString();
+  document.getElementById('rPriceRange').textContent =
+    `下限 ${Number(r.price_low_man).toLocaleString()}万円　—　上限 ${Number(r.price_high_man).toLocaleString()}万円`;
+  document.getElementById('rRent').textContent = `${r.monthly_rent_man}万円`;
+  document.getElementById('rRentSub').textContent = `/月`;
+  document.getElementById('rNoi').textContent = `${r.noi_rate_pct}%`;
+  document.getElementById('rCapRate').textContent = `${r.cap_rate_pct}%`;
+  document.getElementById('rAnnualNoi').textContent = Number(r.annual_noi_man).toLocaleString();
+  document.getElementById('rTsuboPrice').textContent = Number(r.price_per_tsubo_man).toLocaleString();
+  document.getElementById('rRentTsubo').textContent = r.rent_per_tsubo_man;
+  document.getElementById('rComment').textContent = r.comment;
+}
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+</body>
+</html>
